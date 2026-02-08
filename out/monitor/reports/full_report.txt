@@ -1,0 +1,39 @@
+=== Full Log Analysis Report ===
+Generated: Sun Feb  8 09:43:37 PM EET 2026
+
+
+[NETWORK LOG] network.log
+-----------------------------------
+Analysis of out/monitor/raw/network.log:
+  Total lines: 10000
+  Lines with ERROR: 591
+  Lines with numbers: 10000
+
+
+[SECURITY LOG] security.log
+-----------------------------------
+Analysis of out/monitor/raw/security.log:
+  Total lines: 10000
+  Lines with ERROR: 583
+  Lines with numbers: 10000
+
+
+[SYSTEM LOG] system.log
+-----------------------------------
+Analysis of out/monitor/raw/system.log:
+  Total lines: 10000
+  Lines with ERROR: 595
+  Lines with numbers: 10000
+
+
+[GENERAL LOG] timestamps.log
+-----------------------------------
+Analysis of out/monitor/raw/timestamps.log:
+  Total lines: 5
+  Lines with ERROR: 0
+  Lines with numbers: 5
+
+
+=== Summary ===
+Total lines processed: 30005
+Total errors found: 1769

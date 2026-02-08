@@ -1,0 +1,1 @@
+Total Alerts: 5387, Errors: 1769, Local Network Events: 1076

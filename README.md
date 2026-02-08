@@ -1,193 +1,168 @@
-# Operating Systems Lab Project
+# OS Lab Project - Event Analysis System
 
-Log monitoring and analysis system for UNIX environments.
+A UNIX-based log monitoring and analysis system for the Operating Systems course.
 
-## Project Structure
+## Initial Setup
 
+**IMPORTANT: Run this first after extracting the archive!**
+
+```bash
+chmod +x setup.sh
+./setup.sh
 ```
-os_project/
-├── src/
-│   ├── analyze.c              - Single-threaded log analyzer (Part E)
-│   └── parallel_analyze.c     - Multi-threaded analyzer (Part G)
-├── monitor/
-│   ├── raw/                   - Input log files
-│   ├── processed/             - Filtered data
-│   └── reports/               - Generated reports
-├── setup_environment.sh       - Part A: Create directories and sample logs
-├── part_b_filtering.sh        - Part B: Filter logs with regex
-├── part_c_pipeline.sh         - Part C: Generate reports with pipes
-├── part_d_processes.sh        - Part D: Process management demo
-├── run_monitor.sh             - Part F: Automation script
-├── run_all.sh                 - Run everything in sequence
-├── Makefile                   - Build system
-└── README.md                  - This file
-```
+
+This will:
+- Make all scripts executable
+- Compile the C programs (analyze_log, parallel_analyze)
+- Prepare the test generator
 
 ## Quick Start
 
-### Build
+After running setup.sh:
 
-```bash
-make all
+```
+os_project/
+├── src/                          # All source files
+│   ├── setup_environment.sh      # Part A: Creates directory structure and sample logs
+│   ├── filter_logs.sh            # Part B: Filters logs using regex
+│   ├── generate_report.sh        # Part C: Creates summary reports using pipes
+│   ├── manage_processes.sh       # Part D: Demonstrates process management
+│   ├── analyze.c                 # Part E: C program for log analysis
+│   ├── run_monitor.sh            # Part F: Complete automation script
+│   └── parallel_analyze.c        # Part G: Multi-threaded log analyzer
+├── tests/                        # Test utilities
+│   ├── generator.c               # Generates large test log files
+│   └── test.sh                   # Test runner script
+├── out/                          # All output files
+│   └── monitor/
+│       ├── raw/                  # Original log files
+│       ├── processed/            # Filtered/processed logs
+│       └── reports/              # Generated reports
+├── run_all.sh                    # Master script - runs entire workflow
+└── README.md                     # This file
 ```
 
-This compiles both C programs:
-- `analyze_log` - Single-threaded analyzer
-- `parallel_analyze` - Multi-threaded analyzer
+After running setup.sh:
 
-### Run Everything
-
+### Run the complete workflow:
 ```bash
 ./run_all.sh
 ```
 
-Runs all parts (A through G) in sequence.
-
-### Run Individual Parts
-
+### Run with generated test data:
 ```bash
-# Part A: Setup environment
-./setup_environment.sh
-
-# Part B: Filter logs
-./part_b_filtering.sh
-
-# Part C: Generate report
-./part_c_pipeline.sh
-
-# Part D: Process management
-./part_d_processes.sh
-
-# Part E: Analyze single file
-./analyze_log monitor/raw/system.log
-
-# Part F: Analyze all files
-./run_monitor.sh monitor/raw
-
-# Part G: Parallel analysis
-./parallel_analyze monitor/raw/*.log
+./run_all.sh --test_size 1000      # Generate 1000 lines per log
+./run_all.sh --test_size 10000     # Generate 10000 lines per log
 ```
+
+## Individual Components
+
+### Part A - Environment Setup
+Creates directory structure and sample log files:
+```bash
+bash src/setup_environment.sh
+```
+
+### Part B - Log Filtering
+Filters logs for alerts using regex patterns:
+```bash
+bash src/filter_logs.sh
+```
+
+### Part C - Report Generation
+Generates daily summary using pipes:
+```bash
+bash src/generate_report.sh
+```
+
+### Part D - Process Management
+Demonstrates background processes, priority adjustment, and signals:
+```bash
+bash src/manage_processes.sh
+```
+
+### Part E - C Log Analyzer
+Analyzes individual log files:
+```bash
+gcc -o analyze_log src/analyze.c
+./analyze_log out/monitor/raw/system.log
+```
+
+Exit codes:
+- 0: Success
+- 1: File opening error
+- 2: Empty file
+
+### Part F - Automation Script
+Processes all logs in a directory:
+```bash
+bash src/run_monitor.sh out/monitor/raw
+```
+
+Features:
+- Positional parameter validation
+- Directory existence checking
+- Loop constructs (for, while, case)
+- IFS for safe parsing
+
+### Part G - Parallel Analysis
+Multi-threaded analysis of multiple log files:
+```bash
+gcc -pthread -o parallel_analyze src/parallel_analyze.c
+./parallel_analyze out/monitor/raw/*.log
+```
+
+## Testing
+
+Run the test suite with custom data size:
+```bash
+cd tests
+bash test.sh --test_size 500
+```
+
+Or compile and run the generator directly:
+```bash
+cd tests
+gcc -o generator generator.c
+./generator 1000
+```
+
+## Implementation Details
+
+### Regular Expressions Used
+- Date pattern: `^[0-9]{4}-[0-9]{2}-[0-9]{2}`
+- Keywords: `ERROR|FAILED|CRITICAL`
+- IPv4: `[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`
+- Local network: `192\.168\.`
+
+### Process Management
+- Background execution with `&`
+- Process discovery with `ps` and `grep`
+- Priority adjustment with `renice`
+- Graceful termination with `SIGTERM`
+- Forced termination with `SIGKILL`
+
+### Thread Safety
+- Each thread has its own `thread_data_t` structure
+- No shared variables requiring mutex protection
+- Uses `pthread_join()` for synchronization
+
+## Output Files
+
+After running, check these files:
+- `out/monitor/processed/alerts.sorted` - Filtered and sorted alerts
+- `out/monitor/reports/daily_summary.txt` - Summary statistics
+- `out/monitor/reports/full_report.txt` - Detailed analysis report
 
 ## Requirements
 
-- Linux (Ubuntu, Debian, Fedora, etc.)
 - GCC compiler
-- Standard UNIX utilities (grep, awk, sed, wc)
-- POSIX threads library
+- POSIX-compliant shell (bash)
+- pthread library
+- Standard UNIX utilities (grep, awk, wc, ps, etc.)
 
-## Project Components
+## Author
 
-### Part A - Environment Setup (0.5 points)
-Creates directory structure and generates sample log files with dates, error keywords, and IP addresses.
-
-### Part B - Regex Filtering (0.5 points)
-Uses grep with extended regex to filter logs for:
-- Date patterns (YYYY-MM-DD)
-- Error keywords (ERROR, FAILED, CRITICAL)
-- IPv4 addresses
-
-Removes duplicates and sorts the results.
-
-### Part C - Pipes and Redirection (0.5 points)
-Single pipeline command that counts total alerts, errors, and local network events using command substitution and redirects.
-
-### Part D - Process Management (0.4 points)
-Demonstrates:
-- Background process creation
-- Process identification with ps and grep
-- Priority changes with nice/renice
-- Signal handling (SIGTERM, SIGKILL)
-
-### Part E - C Log Analyzer (0.6 points)
-Program features:
-- Opens files with open() system call
-- Error handling with errno and perror()
-- Counts lines, ERROR keywords, and numbers
-- Returns proper exit codes (0=ok, 1=error, 2=empty)
-
-### Part F - Shell Script Automation (0.7 points)
-Automation script with:
-- Argument validation
-- Directory checking
-- For loops for file iteration
-- Case statements for log categorization
-- While loops with IFS for safe processing
-- Comprehensive report generation
-
-### Part G - Multi-threaded Analysis (0.8 points)
-Parallel analyzer using POSIX threads:
-- Creates one thread per file
-- Each thread has its own data structure (thread-safe)
-- Uses pthread_join for synchronization
-- Aggregates results after all threads complete
-
-## Building
-
-### Compile Everything
-```bash
-make all
-```
-
-### Compile Individually
-```bash
-gcc -Wall -Wextra -O2 src/analyze.c -o analyze_log
-gcc -Wall -Wextra -O2 -pthread src/parallel_analyze.c -o parallel_analyze
-```
-
-### Clean
-```bash
-make clean
-```
-
-## Example Usage
-
-### Analyze a Single Log
-```bash
-./analyze_log monitor/raw/system.log
-
-=== Log Analysis Results ===
-File: monitor/raw/system.log
-Total lines: 12
-Lines with ERROR: 4
-Lines with numbers: 12
-===========================
-```
-
-### Parallel Analysis
-```bash
-./parallel_analyze monitor/raw/*.log
-
-=== Parallel Log Analysis ===
-Processing 3 file(s) with threads...
-
-=== Individual File Results ===
-File: monitor/raw/network.log | Lines:     12 | Errors:      3
-File: monitor/raw/security.log | Lines:     12 | Errors:      3
-File: monitor/raw/system.log   | Lines:     12 | Errors:      4
-
-=== Global Summary ===
-TOTAL LINES:        36
-TOTAL ERRORS:       10
-Files Processed:    3
-Files Failed:       0
-=====================
-```
-
-## Exit Codes
-
-- `0` - Success
-- `1` - File open error or processing failure
-- `2` - Empty file (warning)
-
-## Notes
-
-All scripts should be executable:
-```bash
-chmod +x *.sh
-```
-
-The project includes sample log files with realistic data patterns for testing.
-*The formatter for the .c files is following the GNU style of formatting.
-## License
-
-Academic project for educational purposes.
+Harokopio University  
+Department of Informatics and Telematics  
+Operating Systems Lab (Winter 2025-2026)

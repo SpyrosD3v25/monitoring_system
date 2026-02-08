@@ -2,168 +2,134 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <ctype.h>
 
-#define MAX_LINE_LENGTH 1024
-#define MAX_FILES 100
+#define BUFFER_SIZE 4096
 
-typedef struct
-{
-  char            filename[256];
-  unsigned long   line_count;
-  unsigned long   error_count;
-  int             status;	/* 0=ok, 1=error, 2=empty */
-  pthread_t       thread;
-} ThreadData;
+// Structure to pass data to/from threads
+typedef struct {
+    char *filename;
+    int line_count;
+    int error_count;
+    int success;
+} thread_data_t;
 
-typedef struct
-{
-  unsigned long   total_lines;
-  unsigned long   total_errors;
-  int             files_ok;
-  int             files_failed;
-} Summary;
-
-static int
-has_error (const char *line)
-{
-  return strstr (line, "ERROR") != NULL;
+// Thread function to analyze a log file
+void *analyze_file(void *arg) {
+    thread_data_t *data = (thread_data_t *)arg;
+    
+    int fd = open(data->filename, O_RDONLY);
+    if (fd == -1) {
+        fprintf(stderr, "Error opening file: %s\n", data->filename);
+        data->success = 0;
+        pthread_exit(NULL);
+    }
+    
+    data->line_count = 0;
+    data->error_count = 0;
+    data->success = 1;
+    
+    char buffer[BUFFER_SIZE];
+    char line_buffer[1024];
+    int line_pos = 0;
+    ssize_t bytes_read;
+    
+    while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
+        for (ssize_t i = 0; i < bytes_read; i++) {
+            if (buffer[i] == '\n') {
+                line_buffer[line_pos] = '\0';
+                data->line_count++;
+                
+                // Check for ERROR
+                if (strstr(line_buffer, "ERROR") != NULL) {
+                    data->error_count++;
+                }
+                
+                line_pos = 0;
+            } else if (line_pos < 1023) {
+                line_buffer[line_pos++] = buffer[i];
+            }
+        }
+    }
+    
+    // Handle last line if it doesn't end with newline
+    if (line_pos > 0) {
+        line_buffer[line_pos] = '\0';
+        data->line_count++;
+        
+        if (strstr(line_buffer, "ERROR") != NULL) {
+            data->error_count++;
+        }
+    }
+    
+    close(fd);
+    pthread_exit(NULL);
 }
 
-void           *
-analyze_thread (void *arg)
-{
-  ThreadData     *data = (ThreadData *) arg;
-  FILE           *file;
-  char            line[MAX_LINE_LENGTH];
-
-  data->line_count = 0;
-  data->error_count = 0;
-  data->status = 0;
-
-  file = fopen (data->filename, "r");
-  if (file == NULL)
-    {
-      fprintf (stderr, "[Thread %lu] ERROR: Cannot open %s: %s\n",
-	       (unsigned long) pthread_self (), data->filename,
-	       strerror (errno));
-      data->status = 1;
-      return NULL;
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <logfile1> [logfile2] ...\n", argv[0]);
+        return 1;
     }
-
-  while (fgets (line, sizeof (line), file) != NULL)
-    {
-      data->line_count++;
-
-      if (has_error (line))
-	{
-	  data->error_count++;
-	}
+    
+    int num_files = argc - 1;
+    pthread_t *threads = malloc(num_files * sizeof(pthread_t));
+    thread_data_t *thread_data = malloc(num_files * sizeof(thread_data_t));
+    
+    if (!threads || !thread_data) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return 1;
     }
-
-  if (ferror (file))
-    {
-      fprintf (stderr, "[Thread %lu] ERROR: Read error in %s\n",
-	       (unsigned long) pthread_self (), data->filename);
-      data->status = 1;
+    
+    // Create threads
+    printf("Starting parallel analysis of %d files...\n\n", num_files);
+    
+    for (int i = 0; i < num_files; i++) {
+        thread_data[i].filename = argv[i + 1];
+        thread_data[i].line_count = 0;
+        thread_data[i].error_count = 0;
+        thread_data[i].success = 0;
+        
+        if (pthread_create(&threads[i], NULL, analyze_file, &thread_data[i]) != 0) {
+            fprintf(stderr, "Error creating thread for %s\n", argv[i + 1]);
+            thread_data[i].success = 0;
+        }
     }
-
-  fclose (file);
-
-  if (data->line_count == 0)
-    {
-      data->status = 2;
+    
+    // Wait for all threads to complete
+    for (int i = 0; i < num_files; i++) {
+        pthread_join(threads[i], NULL);
     }
-
-  return NULL;
-}
-
-int
-main (int argc, char *argv[])
-{
-  ThreadData      threads[MAX_FILES];
-  Summary         summary = { 0 };
-  int             num_files;
-  int             i;
-  int             ret;
-
-  if (argc < 2)
-    {
-      fprintf (stderr, "Usage: %s <logfile1> [logfile2] [...]\n", argv[0]);
-      fprintf (stderr, "Example: %s system.log network.log security.log\n",
-	       argv[0]);
-      return EXIT_FAILURE;
+    
+    // Print individual results
+    printf("=== Individual File Results ===\n");
+    int total_lines = 0;
+    int total_errors = 0;
+    
+    for (int i = 0; i < num_files; i++) {
+        if (thread_data[i].success) {
+            printf("File: %s | Lines: %d | Errors: %d\n",
+                   thread_data[i].filename,
+                   thread_data[i].line_count,
+                   thread_data[i].error_count);
+            
+            total_lines += thread_data[i].line_count;
+            total_errors += thread_data[i].error_count;
+        } else {
+            printf("File: %s | FAILED TO PROCESS\n", thread_data[i].filename);
+        }
     }
-
-  num_files = argc - 1;
-  if (num_files > MAX_FILES)
-    {
-      fprintf (stderr, "ERROR: Too many files (max %d)\n", MAX_FILES);
-      return EXIT_FAILURE;
-    }
-
-  printf ("=== Parallel Log Analysis ===\n");
-  printf ("Processing %d file(s) with threads...\n\n", num_files);
-
-  for (i = 0; i < num_files; i++)
-    {
-      strncpy (threads[i].filename, argv[i + 1],
-	       sizeof (threads[i].filename) - 1);
-      threads[i].filename[sizeof (threads[i].filename) - 1] = '\0';
-
-      ret =
-	pthread_create (&threads[i].thread, NULL, analyze_thread,
-			&threads[i]);
-      if (ret != 0)
-	{
-	  fprintf (stderr, "ERROR: pthread_create failed for %s: %s\n",
-		   threads[i].filename, strerror (ret));
-	  return EXIT_FAILURE;
-	}
-    }
-
-  for (i = 0; i < num_files; i++)
-    {
-      ret = pthread_join (threads[i].thread, NULL);
-      if (ret != 0)
-	{
-	  fprintf (stderr, "WARNING: pthread_join failed: %s\n",
-		   strerror (ret));
-	}
-    }
-
-  printf ("=== Individual File Results ===\n");
-  for (i = 0; i < num_files; i++)
-    {
-      printf ("File: %-20s | Lines: %6lu | Errors: %6lu",
-	      threads[i].filename,
-	      threads[i].line_count, threads[i].error_count);
-
-      if (threads[i].status == 1)
-	{
-	  printf (" [FAILED]");
-	  summary.files_failed++;
-	}
-      else if (threads[i].status == 2)
-	{
-	  printf (" [EMPTY]");
-	}
-      else
-	{
-	  summary.files_ok++;
-	}
-      printf ("\n");
-
-      summary.total_lines += threads[i].line_count;
-      summary.total_errors += threads[i].error_count;
-    }
-
-  printf ("\n=== Global Summary ===\n");
-  printf ("TOTAL LINES:        %lu\n", summary.total_lines);
-  printf ("TOTAL ERRORS:       %lu\n", summary.total_errors);
-  printf ("Files Processed:    %d\n", summary.files_ok);
-  printf ("Files Failed:       %d\n", summary.files_failed);
-  printf ("=====================\n");
-
-  return (summary.files_failed > 0) ? EXIT_FAILURE : EXIT_SUCCESS;
+    
+    // Print totals
+    printf("\n=== Totals ===\n");
+    printf("TOTAL LINES: %d\n", total_lines);
+    printf("TOTAL ERRORS: %d\n", total_errors);
+    
+    // Cleanup
+    free(threads);
+    free(thread_data);
+    
+    return 0;
 }
