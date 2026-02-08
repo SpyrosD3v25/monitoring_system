@@ -1,6 +1,6 @@
 # OS Lab Project - Event Analysis System
 
-A UNIX-based log monitoring and analysis system for the Operating Systems course.
+A UNIX-based log monitoring and analysis system for the Operating Systems course. I also used a GNU style formatter as you can see in `.vscode/`.
 
 ## Initial Setup
 
