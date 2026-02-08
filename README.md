@@ -160,9 +160,3 @@ After running, check these files:
 - POSIX-compliant shell (bash)
 - pthread library
 - Standard UNIX utilities (grep, awk, wc, ps, etc.)
-
-## Author
-
-Harokopio University  
-Department of Informatics and Telematics  
-Operating Systems Lab (Winter 2025-2026)
