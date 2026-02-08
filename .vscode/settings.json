@@ -1,0 +1,11 @@
+{
+    "emeraldwalk.runonsave": {
+        "autoShowOutputPanel": "always",
+        "commands": [
+            {
+                "match": ".*\\.(c|cpp|h|hpp)$",
+                "cmd": "indent -gnu -psl -di16 \"${file}\" -o \"${file}\""
+            }
+        ]
+    }
+}

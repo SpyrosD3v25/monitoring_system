@@ -1,0 +1,12 @@
+2025-02-08 09:00:15 INFO Network interface eth0 up at 1000Mbps
+2025-02-08 09:05:22 ERROR Connection timeout to 192.168.0.100
+2025-02-08 09:10:33 WARNING High latency detected: 250ms to 8.8.8.8
+2025-02-08 09:15:44 INFO DHCP lease renewed for 192.168.1.50
+2025-02-08 09:20:11 FAILED DNS resolution failed for api.example.com
+2025-02-08 09:25:29 CRITICAL Packet loss 45% on interface eth1
+2025-02-08 09:30:18 ERROR Firewall blocked traffic from 203.0.113.45
+2025-02-08 09:35:42 INFO Connected to VPN server at 10.10.10.1
+2025-02-08 09:40:56 ERROR Port scan detected from 198.51.100.23
+2025-02-08 09:45:03 WARNING Bandwidth utilization at 90% on link 1
+2025-02-08 09:50:17 INFO SSL certificate validated for 172.16.0.1
+2025-02-08 09:55:28 FAILED TCP handshake failed with 192.168.2.200

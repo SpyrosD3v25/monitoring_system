@@ -1,0 +1,12 @@
+2025-02-08 10:15:23 INFO System started successfully
+2025-02-08 10:16:45 ERROR Failed to load module: kernel_driver
+2025-02-08 10:17:12 WARNING Disk space low on /dev/sda1
+2025-02-08 10:18:33 INFO Service httpd started on port 80
+2025-02-08 10:19:01 CRITICAL Memory usage at 95% on server 192.168.1.10
+2025-02-08 10:20:15 ERROR Cannot connect to database at 10.0.0.5
+2025-02-08 10:21:44 INFO Backup completed successfully
+2025-02-08 10:22:09 FAILED Authentication attempt from 192.168.1.25
+2025-02-08 10:23:56 ERROR Disk I/O error on /dev/sdb partition 2
+2025-02-08 10:24:31 INFO User session started for uid 1001
+2025-02-08 10:25:12 WARNING Temperature threshold exceeded: 85°C
+2025-02-08 10:26:47 ERROR Service crashed: nginx (PID 4523)

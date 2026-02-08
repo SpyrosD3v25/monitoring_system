@@ -1,0 +1,12 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Format with indent (GNU oldschool)",
+      "type": "shell",
+      "command": "indent",
+      "args": ["-gnu", "-psl", "-di16", "${file}", "-o", "${file}"],
+      "problemMatcher": []
+    }
+  ]
+}
