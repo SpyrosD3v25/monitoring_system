@@ -187,7 +187,7 @@ chmod +x *.sh
 ```
 
 The project includes sample log files with realistic data patterns for testing.
-
+*The formatter for the .c files is following the GNU style of formatting.
 ## License
 
 Academic project for educational purposes.
